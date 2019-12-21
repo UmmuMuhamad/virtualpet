@@ -29,6 +29,9 @@ var GameState={
         this.pet = this.game.add.sprite(100, 400, 'pet');
         this.pet.anchor.setTo(0.5);
         
+        //pet animation
+        this.pet.animations.add('funnyfaces', [1, 2, 3, 2, 1], 5, false);
+
         this.pet.customParams = {health: 100, fun: 100};
         
         //make draggable pet
@@ -63,12 +66,23 @@ var GameState={
         //nothing is seleceted
         this.selectedItem = null;
         this.uiBlocked = false; //blocked user interface
+
+        var style = { font: '20px Arial', fill: '#171515'}
+        this.game.add.text(50, 20, 'Health:', style);
+        this.game.add.text(200, 20, 'Fun:', style);
+
+        this.healthText = this.game.add.text(120, 20, '0', style);
+        this.funText = this.game.add.text(250, 20, '0', style);
+
+        this.refreshStates();
+
+        //reduce health every 5 seconds
+        this.statsDecreaser = this.game.time.events.loop(Phaser.Timer.SECOND *5, this.reduceProperties, this);
     },
 
     pickItem: function(sprite, events){
         
         if(!this.uiBlocked){
-            console.log('pick');
 
             this.clearSelection();
 
@@ -80,8 +94,7 @@ var GameState={
 
     rotatePet: function(sprite, events){
         if(!this.uiBlocked){
-            console.log('rotate')
-
+            
             this.uiBlocked = true;
 
             this.clearSelection();
@@ -98,7 +111,8 @@ var GameState={
                 sprite.alpha = 1;
 
                 this.pet.customParams.fun += 10;
-                console.log(this.pet.customParams.fun);
+                
+                this.refreshStates();
             }, this);
 
             petRotation.start();
@@ -115,13 +129,65 @@ var GameState={
     },
 
     placeItem: function(sprite, events){
-        var x = events.position.x;
+
+        if (this.selectedItem && !this.uiBlocked){
+            var x = events.position.x;
         var y = events.position.y;
 
         var newItem = this.game.add.sprite(x, y, this.selectedItem.key);
         newItem.anchor.setTo(0.5);
+        newItem.customParams = this.selectedItem.customParams;
+        
+        this.uiBlocked = true; 
         
 
+        var petMovement = this.game.add.tween(this.pet);
+        petMovement.to({x: x, y: y}, 700);
+        petMovement.onComplete.add(function(){
+
+            newItem.destroy(); //make item dissapear when the pet eat it
+            
+            this.pet.animations.play('funnyfaces');
+
+            this.uiBlocked = false;
+
+            var stat;
+            for(stat in newItem.customParams){
+                if(newItem.customParams.hasOwnProperty(stat)){
+                    console.log(stat);
+                    this.pet.customParams[stat] += newItem.customParams[stat];
+                }
+                
+            }
+
+            this.refreshStates(); //update the text
+        }, this);
+        petMovement.start();
+
+     }
+        
+        
+    },
+    refreshStates: function(){
+        this.healthText.text = this.pet.customParams.health;
+        this.funText.text = this.pet.customParams.fun;
+    },
+    reduceProperties: function(){
+        this.pet.customParams.health -=10;
+        this.pet.customParams.fun -=15;
+        this.refreshStates();
+    },
+    update: function(){
+        if(this.pet.customParams.health <= 0 || this.pet.customParams.fun <=0){
+            this.pet.frame =4;
+            this.uiBlocked = true;
+
+            //user will see the screen for 2 seconds befor game over 
+            this.game.time.events.add(2000, this.gameOver, this); 
+        }
+    },
+    gameOver: function(){
+        this.game.state.restart();
     }
 };
 
