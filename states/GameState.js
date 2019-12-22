@@ -167,6 +167,6 @@ var GameState={
         }
     },
     gameOver: function(){
-        this.state.start('HomeState', 'true', false, 'GAME OVER!');
+        this.state.start('HomeState', 'true', false, 'GAME OVERRR!');
     }
 };

@@ -1,7 +1,7 @@
 var HomeState = {
 
-    init: function(message){
-        this.message = message;
+    init: function(messages){
+        this.message = messages;
 
     },
     create: function(){
